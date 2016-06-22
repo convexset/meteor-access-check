@@ -147,7 +147,7 @@ Arguments to `AccessCheck.makeMethod` and `AccessCheck.makePublication`:
  - `name`: the name of the method/publication
  - `body`: the body of the method/publication
  - `schema`: the schema for a single object argument to be passed in [simple-schema format](https://atmospherejs.com/aldeed/simple-schema); default: `{}`; note that methods/publications declared will take a single argument with a default of `{}`
- - `accessChecks`: ; default: {}
+ - `accessChecks`: an array of the names of checks (names as strings) or objects describing how to handle checks; default: []
    - `name`: name of the check
    - `argumentMap`: transformation of the method/publication argument to the form appropriate for the relevant check function (default: `x => x`)
    - `where`: where the check is executed, the default outlined in `AccessCheck.registerCheck` is used if not specified
