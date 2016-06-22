@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'convexset:access-check',
 	version: '0.1.0',
-	summary: '',
+	summary: 'A Meteor package for reusable authentication checks',
 	git: 'https://github.com/convexset/meteor-access-check',
 	documentation: '../../README.md'
 });
