@@ -26,7 +26,7 @@ Additional integrations are planned to support (non-reactive) access checks in r
 
 As is typical of post-Meteor 1.3 packages, begin with:
 ```javascript
-import { AccessCheck } from "meteor/validatis:access-check";
+import { AccessCheck } from "meteor/convexset:access-check";
 ```
 
 ### Registering Access Checks
