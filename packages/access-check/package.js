@@ -1,4 +1,5 @@
 Package.describe({
+	// [validatis:stack]
 	name: 'convexset:access-check',
 	version: '0.1.0',
 	summary: 'A Meteor package for reusable authentication checks',
