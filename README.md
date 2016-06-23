@@ -178,6 +178,7 @@ Examples of data contexts (Meteor methods and publications) are provided below f
 Here is a sample context (the `this` within a Meteor method is called):
 ```javascript
 {
+    contextType: "method",  // added by this package
     isSimulation: false,
     _unblock: [Function],
     _calledUnblock: false,
@@ -203,6 +204,7 @@ Here is a sample context (the `this` within a Meteor method is called):
 But then again, maybe one need only care about this subset:
 ```javascript
 {
+    contextType: "method",  // added by this package
     userId: 'dwtnMSyxqxi32yGKC',
     connection: {
         id: 'iE7w8mcJ2RGHATCLi',
@@ -223,6 +225,7 @@ But then again, maybe one need only care about this subset:
 Here is an example of a publication context (the `this` when a publication function is called during a subscription):
 ```javascript
 {
+    contextType: "publication",  // added by this package
     _session: { /* Don't Worry About This */ },
     connection: {
         id: 'ix35iGpY7TaX6p2Mr',
@@ -255,6 +258,7 @@ Here is an example of a publication context (the `this` when a publication funct
 ... of course, this is perhaps the subset one should care about: 
 ```javascript
 {
+    contextType: "publication",  // added by this package
     connection: {
         id: 'ix35iGpY7TaX6p2Mr',
         httpHeaders: {

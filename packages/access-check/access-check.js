@@ -104,7 +104,9 @@ const AccessCheck = (function() {
 			Meteor.methods({
 				[name]: function(params = {}) {
 					check(params, new SimpleSchema(schema));
-					var context = this;
+					var context = _.extend({
+						contextType: "method",
+					}, this);
 
 					var allChecksPassed = true;
 
@@ -155,7 +157,9 @@ const AccessCheck = (function() {
 		}) {
 		Meteor.publish(name, function(params = {}) {
 			check(params, new SimpleSchema(schema));
-			var context = this;
+			var context = _.extend({
+				contextType: "publication",
+			}, this);
 
 			var allChecksPassed = true;
 
