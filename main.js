@@ -84,14 +84,16 @@ if (Meteor.isServer) {
 			onStop: p => console.log(`[sub|cb|onStop] ${p}`)
 		};
 
+		/* global failingSub: true */
+		/* global regularSub: true */
 		setTimeout(function() {
 			console.log(`Calling: Meteor.subscribe("some-pub", {someNumber: 2}, subCallbacks)`);
-			Meteor.subscribe("some-pub", {someNumber: 2}, subCallbacks);
+			failingSub = Meteor.subscribe("some-pub", {someNumber: 2}, subCallbacks);
 		}, 5000);
 
 		setTimeout(function() {
 			console.log(`Calling: Meteor.subscribe("some-pub", {someNumber: 12}, subCallbacks)`);
-			Meteor.subscribe("some-pub", {someNumber: 12}, subCallbacks);
+			regularSub = Meteor.subscribe("some-pub", {someNumber: 12}, subCallbacks);
 		}, 10000);
 	});
 }
