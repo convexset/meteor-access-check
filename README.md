@@ -12,7 +12,7 @@ Additional integrations are planned to support (non-reactive) access checks in r
 
 - [Usage:](#usage)
   - [Registering Access Checks](#registering-access-checks)
-  - [Meteor Methods](#meteor-methods)
+  - [Meteor Methods and Publications](#meteor-methods-and-publications)
   - [Executing Checks Directly](#executing-checks-directly)
 - [Sample Data Contexts:](#sample-data-contexts)
   - [A Sample Data Context: Methods (on the Server)](#a-sample-data-context-methods-on-the-server)
@@ -96,6 +96,7 @@ AccessCheck.registerCheck({
 The contexts (i.e.: "`this`") that the above functions (`checkFunction` and `failureCallback`) are executed within will be the usual Meteor method and publication contexts.
 (See [examples below]((#sample-data-contexts).)
 
+Generally speaking, client-side failure callbacks should result in routing to a page which the current user is more likely to be authorized to be on. For example, access controls on a restricted route/template might boot an unauthorized user to the "main user dashboard" (MUD?) and access controls on the MUD might boot an unauthorized user to the login page (where probably no access controls apply except perhaps geographical ones by IP address, in which case...)
 
 ### Meteor Methods and Publications
 

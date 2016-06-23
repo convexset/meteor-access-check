@@ -118,7 +118,7 @@ const AccessCheck = (function() {
 							if (!allChecksPassed) {
 								return;
 							}
-							var outcome
+							var outcome;
 							try {
 								outcome = _ac.executeCheck.call(context, {
 									checkName: name,
