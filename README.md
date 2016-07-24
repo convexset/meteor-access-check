@@ -17,7 +17,7 @@ Additional integrations are planned to support (non-reactive) access checks in r
 - [Sample Data Contexts:](#sample-data-contexts)
   - [A Sample Data Context: Methods (on the Server)](#a-sample-data-context-methods-on-the-server)
   - [A Sample Data Context: Publications (on the Server)](#a-sample-data-context-publications-on-the-server)
-- [Future Integrations](#future-integrations)
+- [Integrations](#integrations)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -273,8 +273,8 @@ Here is an example of a publication context (the `this` when a publication funct
 ```
 
 
-## Future Integrations
+## Integrations
 
-The following packages will tap `AccessCheck` for functionality:
+The following packages tap `AccessCheck` for functionality:
  - non-reactive authentication during routing: [`convexset:flow-router-tree`](https://atmospherejs.com/convexset/flow-router-tree)
  - reactive authentication at the template level: [`convexset:template-level-auth`](https://atmospherejs.com/convexset/template-level-auth)
