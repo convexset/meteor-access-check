@@ -43,14 +43,14 @@ if (Meteor.isClient) {
 			onStop: p => console.log(`[sub|cb|onStop] ${p}`)
 		};
 
-		setTimeout(function() {
-			console.log("---------------------------------------------");
-			console.log(`(A Straight Failure) Calling: Meteor.subscribe("some-pub-that-fails", {someNumber: 7}, subCallbacks)`);
-			Meteor.subscribe("some-pub-that-fails", {someNumber: 7}, subCallbacks);
-		}, 1000);
+		// setTimeout(function() {
+		// 	console.log("---------------------------------------------");
+		// 	console.log(`(A Straight Failure) Calling: Meteor.subscribe("some-pub-that-fails", {someNumber: 7}, subCallbacks)`);
+		// 	Meteor.subscribe("some-pub-that-fails", {someNumber: 7}, subCallbacks);
+		// }, 1000);
 
 		// setTimeout(function() {
-		//	console.log("---------------------------------------------");
+		// 	console.log("---------------------------------------------");
 		// 	console.log(`(A Straight Failure) Calling: Meteor.subscribe("some-pub", {someNumber: 2}, subCallbacks)`);
 		// 	Meteor.subscribe("some-pub", {someNumber: 2}, subCallbacks);
 		// }, 2000);

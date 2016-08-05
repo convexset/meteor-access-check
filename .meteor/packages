@@ -17,10 +17,10 @@ standard-minifier-js@1.1.8    # JS minifier run for production mode
 es5-shim@4.6.13                # ECMAScript 5 compatibility for older browsers.
 ecmascript@0.5.7              # Enable ECMAScript2015+ syntax in app code
 
+autopublish # just to see all the data
+
 ejson@1.0.12
 ddp@1.2.5
-
-aldeed:simple-schema
 
 convexset:log
 convexset:access-check

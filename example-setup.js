@@ -24,24 +24,10 @@ AccessCheck.registerCheck({
 });
 
 AccessCheck.registerCheck({
-	checkName: "some-number-at-least-3",
-	checkFunction: function({someNumber}) {
-		return someNumber >= 3;
-	},
-	failureCallback: function(params) {
-		Log.throwException("bad-number", params);
-	}
-});
-
-Log.registerException("some-check-was-not-run", "Some check was not run.");
-AccessCheck.registerCheck({
 	checkName: "some-check",
 	checkFunction: function() {
 		console.log("[check|some-check]");
 		return true;
-	},
-	failureCallback: function() {
-		Log.throwException("some-check-was-not-run");
 	}
 });
 
@@ -59,24 +45,25 @@ AccessCheck.makeMethod({
 		// a milestone check was not run
 
 		// this block works
-		Meteor.call("run-some-check-in-plain-method");
-		AccessCheck.milestoneAssertion("some-milestone");
-		thingCollection.insert({type: "method", someNumber: someNumber, ts: new Date()});
+		// AccessCheck.executeCheck({checkName: "some-check"});
+		// AccessCheck.milestoneAssertion("some-milestone");
+		// thingCollection.insert({type: "method", someNumber: someNumber, ts: new Date()});
+
+		// this block works
+		// Meteor.call("run-some-check-in-plain-method");
+		// AccessCheck.milestoneAssertion("some-milestone");
+		// thingCollection.insert({type: "method", someNumber: someNumber, ts: new Date()});
 
 		// this block works
 		// Meteor.call("run-some-check-in-access-checked-method");
 		// AccessCheck.milestoneAssertion("some-milestone");
 		// thingCollection.insert({type: "method", someNumber: someNumber, ts: new Date()});
 
-		// this block fails: check-not-run-before-milestone
+		// this fails: check-not-run-before-milestone
 		// AccessCheck.milestoneAssertion("some-milestone");
-		// Meteor.call("run-some-check-in-plain-method");
-		// thingCollection.insert({type: "method", someNumber: someNumber, ts: new Date()});
 
-		// this block fails: Mongo write happened before required checks done
+		// this fails: Mongo write happened before required checks done
 		// thingCollection.insert({type: "method", someNumber: someNumber, ts: new Date()});
-		// Meteor.call("run-some-check-in-plain-method");
-		// AccessCheck.milestoneAssertion("some-milestone");
 
 		return someNumber;
 	},
@@ -112,6 +99,7 @@ if (Meteor.isServer) {
 	Meteor.startup(function() {
 		thingCollection.remove({});
 	});
+
 	AccessCheck.makePublication({
 		name: "some-pub",
 		body: function({
@@ -120,9 +108,10 @@ if (Meteor.isServer) {
 			console.log(`[pub] someNumber: ${someNumber}`);
 			thingCollection.insert({type: "pub", someNumber: someNumber, ts: new Date()});
 			
-			// either of these two will make things work
-			// AccessCheck.executeCheck({checkName: "some-check"});
-			Meteor.call("run-some-check-in-plain-method");
+			// either of these three will make things work
+			AccessCheck.executeCheck({checkName: "some-check"});
+			// Meteor.call("run-some-check-in-plain-method");
+			// Meteor.call("run-some-check-in-access-checked-method");
 
 			var cursor = thingCollection.find();
 			return cursor;
@@ -142,8 +131,11 @@ if (Meteor.isServer) {
 			someNumber
 		}) {
 			console.log(`[some-pub-that-fails] someNumber: ${someNumber}`);
+
 			// this write will succeed; it is just the reads that require a check
 			thingCollection.insert({type: "failing-pub", someNumber: someNumber, ts: new Date()});
+
+			// this read will fail; because "some-check" was not performed
 			var cursor = thingCollection.find();
 			return cursor;
 		},
