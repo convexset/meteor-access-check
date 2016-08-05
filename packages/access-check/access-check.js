@@ -220,7 +220,7 @@ const AccessCheck = (function() {
 			if ((limitPerInterval > 0) && (limitIntervalInSec > 0) && Meteor.isServer) {
 				DDPRateLimiter.addRule(_.extend({}, additionalRateLimitingKeys, {
 					type: "method",
-					method: name
+					name: name
 				}), limitPerInterval, limitIntervalInSec);
 			}
 		}
