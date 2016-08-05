@@ -1,10 +1,12 @@
 # AccessCheck
 
-This package is about describing "access check" in a reusable fashion. (For example, a method manipulating a document might check if the logged in user "owns" the document.) The package applies directly to Meteor Methods and publications where the same checks are typically re-used across multiple methods and publications.
+This package is about describing "access check" in a reusable fashion. (For example, a method manipulating a document might check if the logged in user "owns" the document.)
 
-Differences across methods are dealt with by specifying a mapping between method/publication arguments and the (single) object argument that each "access check" accepts.
+The package applies directly to Meteor Methods and publications where the same checks are typically re-used across multiple methods and publications. (Note: Differences in method signatures are handled "sensibly".)
 
-Additional integrations are planned to support (non-reactive) access checks in routing and reactive access checks at the "template-level".
+One can even ensure that certain checks are run before Mongo read/write operations.
+
+Additional integrations exist to support (non-reactive) access checks in routing and reactive access checks at the "template-level".
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -18,6 +20,7 @@ Additional integrations are planned to support (non-reactive) access checks in r
   - [A Sample Data Context: Methods (on the Server)](#a-sample-data-context-methods-on-the-server)
   - [A Sample Data Context: Publications (on the Server)](#a-sample-data-context-publications-on-the-server)
 - [Integrations](#integrations)
+- [Milestone Checking](#milestone-checking)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -137,12 +140,20 @@ AccessCheck.makeMethod({
         }
     ],
 
-    // applicable only for methods
+    // within-body checks
+    requiredChecksBeforeDBRead: [],
+    requiredChecksBeforeDBWrite: ["system-is-not-locked"],
+    requiredChecksBeforeMilestone: {
+        "milestone-1": ["check-1", "check-2"]
+    }
+
+    // applicable only to methods
     limitPerInterval: 10,   // default: -1 (for no rate limiting)
     limitIntervalInSec: 60, // default: 60
     additionalRateLimitingKeys: {}, // default: { connectionId: () => true }
 })
 ```
+
 
 Arguments to `AccessCheck.makeMethod` and `AccessCheck.makePublication`:
  - `name`: the name of the method/publication
@@ -150,11 +161,14 @@ Arguments to `AccessCheck.makeMethod` and `AccessCheck.makePublication`:
  - `schema`: the schema for a single object argument to be passed in [simple-schema format](https://atmospherejs.com/aldeed/simple-schema); default: `{}`; note that methods/publications declared will take a single argument with a default of `{}`
  - `accessChecks`: an array of the names of checks (names as strings) or objects describing how to handle checks; default: []
    - `name`: name of the check
-   - `argumentMap`: transformation of the method/publication argument to the form appropriate for the relevant check function (default: `x => x`)
+   - `argumentMap`: to address differences in method signatures, this parameter specifies the transformation of the method/publication argument to a form appropriate for the relevant check function (default: `x => x`)
    - `where`: where the check is executed, the default outlined in `AccessCheck.registerCheck` is used if not specified
  - `limitPerInterval`: if positive, does rate limiting to `limitPerInterval` calls per `limitIntervalInSec` seconds; applicable only to methods; default: `-1`
  - `limitIntervalInSec`: rate limiting interval; applicable only to methods; default: `60`
  - `additionalRateLimitingKeys`: See [this](https://atmospherejs.com/meteor/ddp-rate-limiter) for more information; applicable only to methods; default: `{ connectionId: () => true }`
+ - `requiredChecksBeforeDBRead`: An array of checks that should have been run (even via function calls within the body) before a Mongo read is performed; See [below](#milestone-checking) (default: `[]`),
+ - `requiredChecksBeforeDBWrite`: An array of checks that should have been run (even via function calls within the body) before a Mongo write is performed; See [below](#milestone-checking) (default: `[]`),
+ - `requiredChecksBeforeMilestone`: A dictionary of where the keys are milestone names (strings) and the values each arrays of checks that should have been run (even via function calls within the body) before the milestone; See [below](#milestone-checking) (default: `{}`),
 
 
 ### Executing Checks Directly
@@ -278,3 +292,29 @@ Here is an example of a publication context (the `this` when a publication funct
 The following packages tap `AccessCheck` for functionality:
  - non-reactive authentication during routing: [`convexset:flow-router-tree`](https://atmospherejs.com/convexset/flow-router-tree)
  - reactive authentication at the template level: [`convexset:template-level-auth`](https://atmospherejs.com/convexset/template-level-auth)
+
+
+## Milestone Checking
+
+Not all checks should be run before a Method/Publication body. Some should be run within. `AccessCheck` enables one to ensure certain checks are run at by the point of various milestones. Mongo reads and Mongo writes are included as certain milestones of general interest.
+
+### Mongo Reads as a Milestone
+
+This refers to the `find` and `findOne` operations.
+
+See information on the `"requiredChecksBeforeDBRead"` key in setting up methods and publications [above](#meteor-methods-and-publications).
+
+### Mongo Writes as a Milestone
+
+This refers to the `insert`, `update`, `remove`, and `upsert` operations.
+
+See information on the `"requiredChecksBeforeDBWrite"` key in setting up methods and publications [above](#meteor-methods-and-publications).
+
+### Named Milestones
+
+Named milestones are generic user-defined milestones.
+
+The checks relating to a particular named milestone can be set using the `"requiredChecksBeforeMilestone"` key for setting up methods and publications. See [above](#meteor-methods-and-publications).
+
+At any point `AccessCheck.milestoneAssertion(milestoneName)` can be used in methods and publications to assert that certain checks have been run before that point. (Checks are recorded even if they are invoked in function calls from within the method/publication function body.)
+
