@@ -106,6 +106,7 @@ if (Meteor.isServer) {
 			someNumber
 		}) {
 			console.log(`[pub] someNumber: ${someNumber}`);
+			// yes, we know that it is totally not recommended to write to the DB in publications
 			thingCollection.insert({type: "pub", someNumber: someNumber, ts: new Date()});
 			
 			// either of these three will make things work
@@ -133,6 +134,7 @@ if (Meteor.isServer) {
 			console.log(`[some-pub-that-fails] someNumber: ${someNumber}`);
 
 			// this write will succeed; it is just the reads that require a check
+			// also, yes, it is totally not recommended to write to the DB in publications
 			thingCollection.insert({type: "failing-pub", someNumber: someNumber, ts: new Date()});
 
 			// this read will fail; because "some-check" was not performed
