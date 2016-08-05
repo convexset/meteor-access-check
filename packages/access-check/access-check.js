@@ -166,6 +166,7 @@ const AccessCheck = (function() {
 							requiredChecksBeforeDBWrite: requiredChecksBeforeDBWrite,
 							requiredChecksBeforeDBRead: requiredChecksBeforeDBRead,
 							requiredChecksBeforeMilestone: requiredChecksBeforeMilestone,
+							milestonesChecked: [],
 						};
 						ACFiberStack.unshift(newACFiberStackFrame);
 						if (_ac.DEBUG_MODE) {
@@ -205,7 +206,12 @@ const AccessCheck = (function() {
 								console.log(`[access-check|method] Before Exit`);
 								showACStackFrame('method', ACFiberStack);
 							}
-							ACFiberStack.shift();
+							let currentACFiberStackFrame = ACFiberStack.shift();
+							_.forEach(currentACFiberStackFrame.requiredChecksBeforeMilestone, function(checkList, milestoneName) {
+								if ((currentACFiberStackFrame.milestonesChecked.indexOf(milestoneName) === -1) && Meteor.isDevelopment) {
+									console.warn(`[access-check] AccessCheck.milestoneAssertion("${milestoneName}") was not called in method ${name}.`);
+								}
+							});
 						}
 						return result;
 					}
@@ -249,6 +255,7 @@ const AccessCheck = (function() {
 						requiredChecksBeforeDBWrite: requiredChecksBeforeDBWrite,
 						requiredChecksBeforeDBRead: requiredChecksBeforeDBRead,
 						requiredChecksBeforeMilestone: requiredChecksBeforeMilestone,
+						milestonesChecked: [],
 					};
 					ACFiberStack.unshift(newACFiberStackFrame);
 					if (_ac.DEBUG_MODE) {
@@ -300,7 +307,12 @@ const AccessCheck = (function() {
 							console.log(`[access-check|publication] Before Exit`);
 							showACStackFrame('publication', ACFiberStack);
 						}
-						ACFiberStack.shift();
+						let currentACFiberStackFrame = ACFiberStack.shift();
+						_.forEach(currentACFiberStackFrame.requiredChecksBeforeMilestone, function(checkList, milestoneName) {
+							if ((currentACFiberStackFrame.milestonesChecked.indexOf(milestoneName) === -1) && Meteor.isDevelopment) {
+								console.warn(`[access-check] AccessCheck.milestoneAssertion("${milestoneName}") was not called in publication ${name}.`);
+							}
+						});
 					}
 					return result;
 				} else {
@@ -326,6 +338,10 @@ const AccessCheck = (function() {
 						console.log(`[access-check|milestone-assertion] Location:\n`, getStackTrace());
 					}
 					showACStackFrame('milestone-assertion', ACFiberStack);
+				}
+
+				if (currentACFiberStackFrame.milestonesChecked.indexOf(milestoneName) === -1) {
+					currentACFiberStackFrame.milestonesChecked.push(milestoneName);
 				}
 
 				currentACFiberStackFrame.requiredChecksBeforeMilestone[milestoneName].forEach(function(checkName) {
