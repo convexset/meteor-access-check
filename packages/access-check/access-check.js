@@ -137,7 +137,7 @@ const AccessCheck = (function() {
 	PackageUtilities.addImmutablePropertyFunction(_ac, "makeMethod",
 		function makeMethod({
 			name, body, schema = {}, accessChecks = [],
-			limitPerInterval = -1, limitIntervalInSec = 60,
+			limitPerInterval = -1, limitIntervalInSec = 10,
 			additionalRateLimitingKeys = ({
 				connectionId: () => true
 			}),
@@ -217,11 +217,13 @@ const AccessCheck = (function() {
 					}
 				}
 			});
+
+			// DDP Rate Limiter
 			if ((limitPerInterval > 0) && (limitIntervalInSec > 0) && Meteor.isServer) {
 				DDPRateLimiter.addRule(_.extend({}, additionalRateLimitingKeys, {
 					type: "method",
 					name: name
-				}), limitPerInterval, limitIntervalInSec);
+				}), limitPerInterval, limitIntervalInSec * 1000);
 			}
 		}
 	);
@@ -231,94 +233,106 @@ const AccessCheck = (function() {
 		PackageUtilities.addImmutablePropertyFunction(_ac, "makePublication",
 			function makePublication({
 				name, body, schema = {}, accessChecks = [],
+				limitPerInterval = -1, limitIntervalInSec = 10,
+				additionalRateLimitingKeys = ({
+					connectionId: () => true
+				}),
 				requiredChecksBeforeDBRead = [],
 				requiredChecksBeforeDBWrite = [],
 				requiredChecksBeforeMilestone = {},
 			}) {
-			Meteor.publish(name, function(params = {}) {
-				check(params, new SimpleSchema(schema));
-				var context = _.extend({
-					contextType: "publication",
-				}, this);
+				Meteor.publish(name, function(params = {}) {
+					check(params, new SimpleSchema(schema));
+					var context = _.extend({
+						contextType: "publication",
+					}, this);
 
-				// Create new AC fiber stack frame (why? methods calling methods and all that)
-				if (isInFiber()) {
-					if (!FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME]) {
-						FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME] = [];
-					}
-					let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
-					var newACFiberStackFrame = {
-						type: "publication",
-						name: name,
-						checksAlreadyRun: [],
-						accessChecks: accessChecks,
-						requiredChecksBeforeDBWrite: requiredChecksBeforeDBWrite,
-						requiredChecksBeforeDBRead: requiredChecksBeforeDBRead,
-						requiredChecksBeforeMilestone: requiredChecksBeforeMilestone,
-						milestonesChecked: [],
-					};
-					ACFiberStack.unshift(newACFiberStackFrame);
-					if (_ac.DEBUG_MODE) {
-						console.log(`[access-check|publication] Created new Access Check Stack Frame`);
-						showACStackFrame('publication', ACFiberStack);
-					}
-				}
-
-				var allChecksPassed = true;
-
-				try {
-					accessChecks
-						.map(o => typeof o === "string" ? {
-							name: o
-						} : o)
-						.forEach(function runCheck({
-							name, argumentMap = x => x, where
-						}) {
-							if (!allChecksPassed) {
-								return;
-							}
-							var outcome;
-							try {
-								outcome = _ac.executeCheck.call(context, {
-									checkName: name,
-									where: where,
-									params: argumentMap(params),
-									executeFailureCallback: true
-								});
-							} catch (e) {
-								// update allChecksPassed and toss it out
-								// to update [pubContext].error
-								allChecksPassed = false;
-								throw e;
-							}
-							if (!outcome || (outcome.checkDone && !outcome.result)) {
-								allChecksPassed = false;
-							}
-						});
-				} catch (e) {
-					this.error(e);
-				}
-
-				if (allChecksPassed) {
-					var result = body.call(context, params);
-					if (isInFiber() && _.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
+					// Create new AC fiber stack frame (why? methods calling methods and all that)
+					if (isInFiber()) {
+						if (!FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME]) {
+							FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME] = [];
+						}
 						let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+						var newACFiberStackFrame = {
+							type: "publication",
+							name: name,
+							checksAlreadyRun: [],
+							accessChecks: accessChecks,
+							requiredChecksBeforeDBWrite: requiredChecksBeforeDBWrite,
+							requiredChecksBeforeDBRead: requiredChecksBeforeDBRead,
+							requiredChecksBeforeMilestone: requiredChecksBeforeMilestone,
+							milestonesChecked: [],
+						};
+						ACFiberStack.unshift(newACFiberStackFrame);
 						if (_ac.DEBUG_MODE) {
-							console.log(`[access-check|publication] Before Exit`);
+							console.log(`[access-check|publication] Created new Access Check Stack Frame`);
 							showACStackFrame('publication', ACFiberStack);
 						}
-						let currentACFiberStackFrame = ACFiberStack.shift();
-						_.forEach(currentACFiberStackFrame.requiredChecksBeforeMilestone, function(checkList, milestoneName) {
-							if ((currentACFiberStackFrame.milestonesChecked.indexOf(milestoneName) === -1) && Meteor.isDevelopment) {
-								console.warn(`[access-check] AccessCheck.milestoneAssertion("${milestoneName}") was not called in publication ${name}.`);
-							}
-						});
 					}
-					return result;
-				} else {
-					this.ready();
+
+					var allChecksPassed = true;
+
+					try {
+						accessChecks
+							.map(o => typeof o === "string" ? {
+								name: o
+							} : o)
+							.forEach(function runCheck({
+								name, argumentMap = x => x, where
+							}) {
+								if (!allChecksPassed) {
+									return;
+								}
+								var outcome;
+								try {
+									outcome = _ac.executeCheck.call(context, {
+										checkName: name,
+										where: where,
+										params: argumentMap(params),
+										executeFailureCallback: true
+									});
+								} catch (e) {
+									// update allChecksPassed and toss it out
+									// to update [pubContext].error
+									allChecksPassed = false;
+									throw e;
+								}
+								if (!outcome || (outcome.checkDone && !outcome.result)) {
+									allChecksPassed = false;
+								}
+							});
+					} catch (e) {
+						this.error(e);
+					}
+
+					if (allChecksPassed) {
+						var result = body.call(context, params);
+						if (isInFiber() && _.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
+							let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+							if (_ac.DEBUG_MODE) {
+								console.log(`[access-check|publication] Before Exit`);
+								showACStackFrame('publication', ACFiberStack);
+							}
+							let currentACFiberStackFrame = ACFiberStack.shift();
+							_.forEach(currentACFiberStackFrame.requiredChecksBeforeMilestone, function(checkList, milestoneName) {
+								if ((currentACFiberStackFrame.milestonesChecked.indexOf(milestoneName) === -1) && Meteor.isDevelopment) {
+									console.warn(`[access-check] AccessCheck.milestoneAssertion("${milestoneName}") was not called in publication ${name}.`);
+								}
+							});
+						}
+						return result;
+					} else {
+						this.ready();
+					}
+				});
+
+				// DDP Rate Limiter
+				if ((limitPerInterval > 0) && (limitIntervalInSec > 0) && Meteor.isServer) {
+					DDPRateLimiter.addRule(_.extend({}, additionalRateLimitingKeys, {
+						type: "subscription",
+						name: name
+					}), limitPerInterval, limitIntervalInSec * 1000);
 				}
-			});
 			}
 		);
 	}

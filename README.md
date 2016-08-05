@@ -147,9 +147,9 @@ AccessCheck.makeMethod({
         "milestone-1": ["check-1", "check-2"]
     }
 
-    // applicable only to methods
+    // DDP Rate Limiter: See: http://docs.meteor.com/api/methods.html#ddpratelimiter
     limitPerInterval: 10,   // default: -1 (for no rate limiting)
-    limitIntervalInSec: 60, // default: 60
+    limitIntervalInSec: 60, // default: 10
     additionalRateLimitingKeys: {}, // default: { connectionId: () => true }
 })
 ```
@@ -163,9 +163,9 @@ Arguments to `AccessCheck.makeMethod` and `AccessCheck.makePublication`:
    - `name`: name of the check
    - `argumentMap`: to address differences in method signatures, this parameter specifies the transformation of the method/publication argument to a form appropriate for the relevant check function (default: `x => x`)
    - `where`: where the check is executed, the default outlined in `AccessCheck.registerCheck` is used if not specified
- - `limitPerInterval`: if positive, does rate limiting to `limitPerInterval` calls per `limitIntervalInSec` seconds; applicable only to methods; default: `-1`
- - `limitIntervalInSec`: rate limiting interval; applicable only to methods; default: `60`
- - `additionalRateLimitingKeys`: See [this](https://atmospherejs.com/meteor/ddp-rate-limiter) for more information; applicable only to methods; default: `{ connectionId: () => true }`
+ - `limitPerInterval`: if positive, does rate limiting to `limitPerInterval` calls per `limitIntervalInSec` seconds; (default: `-1`)
+ - `limitIntervalInSec`: rate limiting interval; (default: `10`)
+ - `additionalRateLimitingKeys`: See [this](http://docs.meteor.com/api/methods.html#ddpratelimiter) for more information; default: `{ connectionId: () => true }`
  - `requiredChecksBeforeDBRead`: An array of checks that should have been run (even via function calls within the body) before a Mongo read is performed; See [below](#milestone-checking) (default: `[]`),
  - `requiredChecksBeforeDBWrite`: An array of checks that should have been run (even via function calls within the body) before a Mongo write is performed; See [below](#milestone-checking) (default: `[]`),
  - `requiredChecksBeforeMilestone`: A dictionary of where the keys are milestone names (strings) and the values each arrays of checks that should have been run (even via function calls within the body) before the milestone; See [below](#milestone-checking) (default: `{}`),
