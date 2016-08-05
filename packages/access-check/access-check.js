@@ -217,7 +217,7 @@ const AccessCheck = (function() {
 					}
 				}
 			});
-			if ((limitPerInterval > 0) && (limitIntervalInSec > 0)) {
+			if ((limitPerInterval > 0) && (limitIntervalInSec > 0) && Meteor.isServer) {
 				DDPRateLimiter(_.extend({}, additionalRateLimitingKeys, {
 					type: "method",
 					method: name
