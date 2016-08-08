@@ -24,11 +24,11 @@ if (Meteor.isClient) {
 		// 	Meteor.call("some-method", {someNumber: 1}, methodCB);
 		// }, 50);
 
-		// setTimeout(function() {
-		// 	console.log("---------------------------------------------");
-		// 	console.log(`Calling: Meteor.call("some-method", {someNumber: 7}, (err, res) => console.log(err, res))`);
-		// 	Meteor.call("some-method", {someNumber: 7}, methodCB);
-		// }, 3000);
+		setTimeout(function() {
+			console.log("---------------------------------------------");
+			console.log(`Calling: Meteor.call("some-method", {someNumber: 7}, (err, res) => console.log(err, res))`);
+			Meteor.call("some-method", {someNumber: 7}, methodCB);
+		}, 3000);
 	});
 }
 

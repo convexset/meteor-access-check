@@ -45,9 +45,9 @@ AccessCheck.makeMethod({
 		// a milestone check was not run
 
 		// this block works
-		// AccessCheck.executeCheck({checkName: "some-check"});
-		// AccessCheck.milestoneAssertion("some-milestone");
-		// thingCollection.insert({type: "method", someNumber: someNumber, ts: new Date()});
+		AccessCheck.executeCheck({checkName: "some-check"});
+		AccessCheck.milestoneAssertion("some-milestone");
+		thingCollection.insert({type: "method", someNumber: someNumber, ts: new Date()});
 
 		// this block works
 		// Meteor.call("run-some-check-in-plain-method");

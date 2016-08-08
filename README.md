@@ -111,6 +111,8 @@ The syntax for methods and publications is identical.
 AccessCheck.makeMethod({
     name: "my-package/my-method";
     body: function({a1, itemId, a3}) {
+        /* a lot of work, maybe... */
+        AccessCheck.executeCheck({checkName: "system-is-not-locked"});
         ItemCollection.update({
             _id: itemId
         }, {
@@ -174,7 +176,7 @@ Arguments to `AccessCheck.makeMethod` and `AccessCheck.makePublication`:
 ### Executing Checks Directly
 
 Simply do:
-```
+```javascript
 AccessCheck.executeCheck({
     checkName: "some-check",
     where: AccessCheck.EVERYWHERE,
