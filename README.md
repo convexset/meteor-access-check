@@ -16,6 +16,7 @@ Additional integrations exist to support (non-reactive) access checks in routing
   - [Registering Access Checks](#registering-access-checks)
   - [Meteor Methods and Publications](#meteor-methods-and-publications)
   - [Executing Checks Directly](#executing-checks-directly)
+  - [Enabling Dependency Injection](#enabling-dependency-injection)
 - [Sample Data Contexts:](#sample-data-contexts)
   - [A Sample Data Context: Methods (on the Server)](#a-sample-data-context-methods-on-the-server)
   - [A Sample Data Context: Publications (on the Server)](#a-sample-data-context-publications-on-the-server)
@@ -184,6 +185,26 @@ AccessCheck.executeCheck({
     executeFailureCallback: true,  // default: false 
 })
 ```
+
+### Enabling Dependency Injection
+
+To create placeholder checks whose `checkFunction`, `failureCallback` parameters can be injected later:
+```javascript
+export const checkInjectors = AccessCheck.createInjectedCheck(`xxx/may-edit`, AccessCheck.EVERYWHERE);
+```
+... and later...
+```javascript
+// imported checkInjectors...
+checkInjectors.setCheck(function() {
+    const user = Meteor.users.findOne(this.userId);
+    return !!user && (user.username !== 'baduser');
+});
+
+checkInjectors.setFailureCallback(function() {
+    throw new Meteor.Error('boo!');
+});
+```
+
 
 ## Sample Data Contexts:
 

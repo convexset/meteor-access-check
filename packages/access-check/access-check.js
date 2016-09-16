@@ -2,7 +2,7 @@
 // Boiler Plate
 ////////////////////////////////////////////////////////////////////////////////
 import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
-checkNpmVersions({  
+checkNpmVersions({
 	'package-utils': '^0.2.1',
 	'underscore': '^1.8.3'
 });  // package name can be omitted
@@ -373,6 +373,30 @@ const AccessCheck = (function() {
 		}
 	);
 
+	PackageUtilities.addImmutablePropertyFunction(_ac, 'createInjectedCheck', function createInjectedCheck(checkName, site = EVERYWHERE) {
+		let _check = () => true;
+		let _failureCallback = () => true;
+
+		_ac.registerCheck({
+			checkName: checkName,
+			checkFunction: function doCheck() {
+				return _check.apply(this, arguments);
+			},
+			defaultSite: site,
+			failureCallback: function doFailureCallback() {
+				return _failureCallback.apply(this, arguments);
+			}
+		});
+
+		return {
+			setCheck: function setCheck(f) {
+				_check = f;
+			},
+			setFailureCallback: function setFailureCallback(f) {
+				_failureCallback = f;
+			},
+		};
+	});
 
 	////////////////////////////////////////////////////////////////////////////
 
