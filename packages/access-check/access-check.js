@@ -235,6 +235,13 @@ const AccessCheck = (function() {
 							});
 						}
 						return result;
+					} else {
+						return {
+							ok: false,
+							success: false,
+							outcome: 'access-check-failed',
+							note: 'If it is desired that this is registered as an error, such as with a Promise-ified method call, throw an error in the failureCallback.',
+						};
 					}
 				}
 			});
