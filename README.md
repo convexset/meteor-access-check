@@ -8,22 +8,27 @@ One can even ensure that certain checks are run before Mongo read/write operatio
 
 Additional integrations exist to support (non-reactive) access checks in routing and reactive access checks at the "template-level".
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 ## Table of Contents
 
+<!-- MarkdownTOC -->
+
 - [Usage:](#usage)
-  - [Registering Access Checks](#registering-access-checks)
-  - [Meteor Methods and Publications](#meteor-methods-and-publications)
-  - [Executing Checks Directly](#executing-checks-directly)
-  - [Enabling Dependency Injection](#enabling-dependency-injection)
+    - [Registering Access Checks](#registering-access-checks)
+        - [Client Side Built-in Patterns](#client-side-built-in-patterns)
+        - [Common Patterns](#common-patterns)
+    - [Meteor Methods and Publications](#meteor-methods-and-publications)
+    - [Executing Checks Directly](#executing-checks-directly)
+    - [Enabling Dependency Injection](#enabling-dependency-injection)
 - [Sample Data Contexts:](#sample-data-contexts)
-  - [A Sample Data Context: Methods (on the Server)](#a-sample-data-context-methods-on-the-server)
-  - [A Sample Data Context: Publications (on the Server)](#a-sample-data-context-publications-on-the-server)
+    - [A Sample Data Context: Methods \(on the Server\)](#a-sample-data-context-methods-on-the-server)
+    - [A Sample Data Context: Publications \(on the Server\)](#a-sample-data-context-publications-on-the-server)
 - [Integrations](#integrations)
 - [Milestone Checking](#milestone-checking)
+    - [Mongo Reads as a Milestone](#mongo-reads-as-a-milestone)
+    - [Mongo Writes as a Milestone](#mongo-writes-as-a-milestone)
+    - [Named Milestones](#named-milestones)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<!-- /MarkdownTOC -->
 
 
 ## Usage:
@@ -45,7 +50,7 @@ AccessCheck.registerCheck({
         return !!this.userId;  // yes, the data context is available as if one
                                // were in a typical method or publication
     },
-    defaultSite: AccessCheck.EVERYWHERE  // or AccessCheck.CLIENT_ONLY
+    defaultSite: AccessCheck.SERVER_ONLY // or AccessCheck.EVERYWHERE
                                          // or AccessCheck.SERVER_ONLY
 });
 ```
@@ -56,8 +61,9 @@ AccessCheck.registerCheck({
     checkName: "user-is-signed-in-or-called-server-side"
     checkFunction: function () {
         if (Meteor.isClient) {
-            return !!this.userId;
-        } else {
+            return !!Meteor.userId();
+        }
+        if (Meteor.isServer) {
             return (this.connection === null) || (!!this.userId);
         }
     },
@@ -101,6 +107,55 @@ The contexts (i.e.: "`this`") that the above functions (`checkFunction` and `fai
 (See [examples below]((#sample-data-contexts).)
 
 Generally speaking, client-side failure callbacks should result in routing to a page which the current user is more likely to be authorized to be on. For example, access controls on a restricted route/template might boot an unauthorized user to the "main user dashboard" (MUD?) and access controls on the MUD might boot an unauthorized user to the login page (where probably no access controls apply except perhaps geographical ones by IP address, in which case...)
+
+#### Client Side Built-in Patterns
+
+Noting that clients log in and wait for subscriptions, the following pattern takes care of the two common use cases:
+```javascript
+AccessCheck.registerCheck({
+    checkName: 'item-exists',
+    checkFunction: function (params) {
+        // ... or set provisionallyAllowIfLoggingIn to true
+        if (Meteor.isClient) {
+            if (Meteor.loggingIn()) {
+                return true;
+            }
+        }
+
+        // ... or set provisionallyAllowIfLoggingIn to true
+        if (Meteor.isClient) {
+            if (!this.templateInstance.subscriptionsReady()) {
+                return true; // provisionally pass user pending data arrival
+            }
+        }
+
+        // get item
+        let itemId = params.id(); // reactive getter
+        return !!ItemCollection.findOne({_id: itemId});
+    },
+    defaultSite: AccessCheck.EVERYWHERE
+});
+```
+which is equivalent to...
+```javascript
+AccessCheck.registerCheck({
+    checkName: 'item-exists',
+    checkFunction: function (params) {
+        // get item
+        let itemId = params.id;
+        return !!ItemCollection.findOne({_id: itemId});
+    },
+    defaultSite: AccessCheck.EVERYWHERE,
+    provisionallyAllowIfLoggingIn: true,
+    provisionallyAllowIfSubsNotReady: true,
+});
+```
+
+#### Common Patterns
+
+Common check patterns reduce boilerplate:
+
+ - `AccessCheck.COMMON_PATTERNS.collectionHasItem(collection, id, idKey = '_id')`: checks a collection `collection` for a document that meets the selector `{[idKey]: id}` (that's a [computed property name](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Operators/Object_initializer#Computed_property_names)). Returns `true` if so and `false` otherwise.
 
 ### Meteor Methods and Publications
 

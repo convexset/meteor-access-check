@@ -67,7 +67,9 @@ const AccessCheck = (function() {
 	PackageUtilities.addImmutablePropertyFunction(_ac, "registerCheck",
 		function registerCheck({
 			checkName, checkFunction,
-			defaultSite = EVERYWHERE, failureCallback = function() {}
+			defaultSite = EVERYWHERE, failureCallback = function() {},
+			provisionallyAllowIfLoggingIn = false,
+			provisionallyAllowIfSubsNotReady = false
 		}) {
 			if (typeof checkName !== "string") {
 				throw new Meteor.Error("invalid-check-name");
@@ -81,8 +83,27 @@ const AccessCheck = (function() {
 			if (!!_checkFunctions[checkName]) {
 				console.warn(`Check name ${checkName} already exists. Overwriting...`);
 			}
+
+			function _checkFunction() {
+				// provisionally pass pending login completion
+				if (provisionallyAllowIfLoggingIn && Meteor.isClient) {
+		            if (Meteor.loggingIn()) {
+		                return true;
+		            }
+				}
+
+				// provisionally pass pending data arrival on client
+				if (provisionallyAllowIfSubsNotReady && Meteor.isClient) {
+					if (!this.templateInstance.subscriptionsReady()) {
+						return true;
+					}
+				}
+
+				return checkFunction.apply(this, arguments);
+			}
+
 			_checkFunctions[checkName] = {
-				checkFunction: checkFunction,
+				checkFunction: _checkFunction,
 				defaultSite: defaultSite,
 				failureCallback: failureCallback
 			};
@@ -396,6 +417,12 @@ const AccessCheck = (function() {
 				_failureCallback = f;
 			},
 		};
+	});
+
+	PackageUtilities.addImmutablePropertyObject(_ac, 'COMMON_PATTERNS', {
+		collectionHasItem: function collectionHasItem(collection, id, idKey = '_id') {
+			return !!collection.findOne(_.object([[idKey, id]]));
+		}
 	});
 
 	////////////////////////////////////////////////////////////////////////////
