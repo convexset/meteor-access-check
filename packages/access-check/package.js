@@ -1,7 +1,7 @@
 Package.describe({
 	// [validatis:stack]
 	name: 'convexset:access-check',
-	version: '0.1.2_1',
+	version: '0.1.2_2',
 	summary: 'A Meteor package for reusable authentication checks',
 	git: 'https://github.com/convexset/meteor-access-check',
 	documentation: '../../README.md'
@@ -12,7 +12,7 @@ Package.onUse(function setUpPackage(api) {
 	api.use(['ecmascript', 'check', 'ddp-rate-limiter']);
 	api.use([
 		'aldeed:simple-schema@1.5.3',
-		'convexset:fiber-scope@0.1.1_2'
+		'convexset:fiber-scope@0.1.2'
 	]);
 	api.use('tmeasday:check-npm-versions@0.3.1');
 	api.mainModule('access-check.js');
