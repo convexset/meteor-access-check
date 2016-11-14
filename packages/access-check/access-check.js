@@ -5,7 +5,7 @@ import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
 checkNpmVersions({
 	'package-utils': '^0.2.1',
 	'underscore': '^1.8.3'
-});  // package name can be omitted
+}); // package name can be omitted
 const PackageUtilities = require('package-utils');
 const _ = require('underscore');
 
@@ -16,24 +16,27 @@ import { SimpleSchema } from 'meteor/aldeed:simple-schema';
 import { FiberScope } from 'meteor/convexset:fiber-scope';
 import { Mongo } from 'meteor/mongo';
 
+/* eslint-disable no-console */
+
 ////////////////////////////////////////////////////////////////////////////////
 // Fibers-based Tracking
 ////////////////////////////////////////////////////////////////////////////////
 
-const ACCESS_CHECK_FIBER_STACK_NAME = "convexset:access-check";
-var Fiber = {};
+const ACCESS_CHECK_FIBER_STACK_NAME = 'convexset:access-check';
+let Fiber = {};
 if (Meteor.isServer) {
-	Fiber = require("fibers");
+	Fiber = require('fibers');
 	FiberScope._replaceMeteorTimerFunctions();
 }
+
 function isInFiber() {
 	return !!Fiber.current;
 }
-var showACStackFrame = function() {};
+let showACStackFrame = function() {};
 if (Meteor.isServer) {
-	showACStackFrame = function showACStackFrame(s, ACFiberStack) {
+	showACStackFrame = function _showACStackFrame(s, ACFiberStack) {
 		console.log(`[access-check|${s}] Current AC Stack Frame (${ACFiberStack.length} total):`);
-		_.forEach(ACFiberStack[0], function(v, n) {
+		_.forEach(ACFiberStack[0], (v, n) => {
 			console.log(`    - ${n}:`, v);
 		});
 	};
@@ -44,41 +47,44 @@ if (Meteor.isServer) {
 ////////////////////////////////////////////////////////////////////////////////
 
 const AccessCheck = (function() {
-	var _acConstr = function AccessCheck() {};
-	var _ac = new _acConstr();
+	// eslint-disable-next-line no-shadow
+	const _acConstr = function AccessCheck() {};
+	const _ac = new _acConstr();
 	_ac.DEBUG_MODE = false;
 	_ac.DEBUG_MODE__SHOW_STACKTRACES = false;
 
 	////////////////////////////////////////////////////////////////////////////
 	// Const
 	////////////////////////////////////////////////////////////////////////////
-	const EVERYWHERE = "everywhere";
-	const CLIENT_ONLY = "client-only";
-	const SERVER_ONLY = "server-only";
+	const EVERYWHERE = 'everywhere';
+	const CLIENT_ONLY = 'client-only';
+	const SERVER_ONLY = 'server-only';
 
-	PackageUtilities.addImmutablePropertyValue(_ac, "EVERYWHERE", EVERYWHERE);
-	PackageUtilities.addImmutablePropertyValue(_ac, "CLIENT_ONLY", CLIENT_ONLY);
-	PackageUtilities.addImmutablePropertyValue(_ac, "SERVER_ONLY", SERVER_ONLY);
+	PackageUtilities.addImmutablePropertyValue(_ac, 'EVERYWHERE', EVERYWHERE);
+	PackageUtilities.addImmutablePropertyValue(_ac, 'CLIENT_ONLY', CLIENT_ONLY);
+	PackageUtilities.addImmutablePropertyValue(_ac, 'SERVER_ONLY', SERVER_ONLY);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Checkers
 	////////////////////////////////////////////////////////////////////////////
-	var _checkFunctions = {};
-	PackageUtilities.addImmutablePropertyFunction(_ac, "registerCheck",
+	const _checkFunctions = {};
+	PackageUtilities.addImmutablePropertyFunction(_ac, 'registerCheck',
 		function registerCheck({
-			checkName, checkFunction,
-			defaultSite = EVERYWHERE, failureCallback = function() {},
+			checkName,
+			checkFunction,
+			defaultSite = EVERYWHERE,
+			failureCallback = function() {},
 			provisionallyAllowIfLoggingIn = false,
 			provisionallyAllowIfSubsNotReady = false
 		}) {
-			if (typeof checkName !== "string") {
-				throw new Meteor.Error("invalid-check-name");
+			if (typeof checkName !== 'string') {
+				throw new Meteor.Error('invalid-check-name');
 			}
 			if (!_.isFunction(checkFunction)) {
-				throw new Meteor.Error("invalid-check-function");
+				throw new Meteor.Error('invalid-check-function');
 			}
 			if (!_.isFunction(failureCallback)) {
-				throw new Meteor.Error("invalid-failure-callback-function");
+				throw new Meteor.Error('invalid-failure-callback-function');
 			}
 			if (!!_checkFunctions[checkName]) {
 				console.warn(`Check name ${checkName} already exists. Overwriting...`);
@@ -87,9 +93,9 @@ const AccessCheck = (function() {
 			function _checkFunction() {
 				// provisionally pass pending login completion
 				if (provisionallyAllowIfLoggingIn && Meteor.isClient) {
-		            if (Meteor.loggingIn()) {
-		                return true;
-		            }
+					if (Meteor.loggingIn()) {
+						return true;
+					}
 				}
 
 				// provisionally pass pending data arrival on client
@@ -114,30 +120,33 @@ const AccessCheck = (function() {
 	////////////////////////////////////////////////////////////////////////////
 	// Running Checks
 	////////////////////////////////////////////////////////////////////////////
-	PackageUtilities.addImmutablePropertyFunction(_ac, "executeCheck",
+	PackageUtilities.addImmutablePropertyFunction(_ac, 'executeCheck',
 		function executeCheck({
-			checkName, where, params, executeFailureCallback = false
+			checkName,
+			where,
+			params,
+			executeFailureCallback = false
 		}) {
-			var context = this;
-			var accessCheck = _checkFunctions[checkName];
+			const context = this;
+			const accessCheck = _checkFunctions[checkName];
 			if (!accessCheck) {
-				throw new Meteor.Error("no-such-access-check", checkName);
+				throw new Meteor.Error('no-such-access-check', checkName);
 			}
 			where = where || accessCheck.defaultSite;
-			var runCheck = (where === AccessCheck.EVERYWHERE) || (Meteor.isClient && (where === AccessCheck.CLIENT_ONLY)) || (Meteor.isServer && (where === AccessCheck.CLIENT_ONLY));
-			var outcome = {
+			const runCheck = (where === AccessCheck.EVERYWHERE) || (Meteor.isClient && (where === AccessCheck.CLIENT_ONLY)) || (Meteor.isServer && (where === AccessCheck.CLIENT_ONLY));
+			const outcome = {
 				checkDone: runCheck
 			};
 			if (runCheck) {
 				outcome.result = accessCheck.checkFunction.call(context, params);
 
 				if (isInFiber() && _.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
-					let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+					const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
 					if (_ac.DEBUG_MODE) {
 						console.log(`[access-check|execute-check] Executed check: ${checkName}; Result:`, outcome.result);
 						showACStackFrame('execute-check', ACFiberStack);
 					}
-					ACFiberStack.forEach(function(frame) {
+					ACFiberStack.forEach(frame => {
 						if (frame.checksAlreadyRun.indexOf(checkName) === -1) {
 							frame.checksAlreadyRun.push(checkName);
 						}
@@ -155,10 +164,14 @@ const AccessCheck = (function() {
 	////////////////////////////////////////////////////////////////////////////
 	// Methods and Publications
 	////////////////////////////////////////////////////////////////////////////
-	PackageUtilities.addImmutablePropertyFunction(_ac, "makeMethod",
+	PackageUtilities.addImmutablePropertyFunction(_ac, 'makeMethod',
 		function makeMethod({
-			name, body, schema = {}, accessChecks = [],
-			limitPerInterval = -1, limitIntervalInSec = 10,
+			name,
+			body,
+			schema = {},
+			accessChecks = [],
+			limitPerInterval = -1,
+			limitIntervalInSec = 10,
 			additionalRateLimitingKeys = ({
 				connectionId: () => true
 			}),
@@ -169,8 +182,8 @@ const AccessCheck = (function() {
 			Meteor.methods({
 				[name]: function(params = {}) {
 					check(params, new SimpleSchema(schema));
-					var context = _.extend({
-						contextType: "method",
+					const context = _.extend({
+						contextType: 'method',
 					}, this);
 
 					// Create new AC fiber stack frame (why? methods calling methods and all that)
@@ -178,9 +191,9 @@ const AccessCheck = (function() {
 						if (!FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME]) {
 							FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME] = [];
 						}
-						let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
-						var newACFiberStackFrame = {
-							type: "method",
+						const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+						const newACFiberStackFrame = {
+							type: 'method',
 							name: name,
 							checksAlreadyRun: [],
 							accessChecks: accessChecks,
@@ -196,19 +209,22 @@ const AccessCheck = (function() {
 						}
 					}
 
-					var allChecksPassed = true;
+					let allChecksPassed = true;
 
 					accessChecks
-						.map(o => typeof o === "string" ? {
+						.map(o => typeof o === 'string' ? {
 							name: o
 						} : o)
 						.forEach(function runCheck({
-							name, argumentMap = x => x, where
+							// eslint-disable-next-line no-shadow
+							name,
+							argumentMap = x => x,
+							where
 						}) {
 							if (!allChecksPassed) {
 								return;
 							}
-							var outcome = _ac.executeCheck.call(context, {
+							const outcome = _ac.executeCheck.call(context, {
 								checkName: name,
 								where: where,
 								params: argumentMap(params),
@@ -220,17 +236,17 @@ const AccessCheck = (function() {
 						});
 
 					if (allChecksPassed) {
-						var result = body.call(context, params);
+						const result = body.call(context, params);
 						if (isInFiber() && _.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
-							let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+							const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
 							if (_ac.DEBUG_MODE) {
 								console.log(`[access-check|method] Before Exit`);
 								showACStackFrame('method', ACFiberStack);
 							}
-							let currentACFiberStackFrame = ACFiberStack.shift();
-							_.forEach(currentACFiberStackFrame.requiredChecksBeforeMilestone, function(checkList, milestoneName) {
+							const currentACFiberStackFrame = ACFiberStack.shift();
+							_.forEach(currentACFiberStackFrame.requiredChecksBeforeMilestone, (checkList, milestoneName) => {
 								if ((currentACFiberStackFrame.milestonesChecked.indexOf(milestoneName) === -1) && Meteor.isDevelopment) {
-									console.warn(`[access-check] AccessCheck.milestoneAssertion("${milestoneName}") was not called in method ${name}.`);
+									console.warn(`[access-check] AccessCheck.milestoneAssertion('${milestoneName}') was not called in method ${name}.`);
 								}
 							});
 						}
@@ -249,7 +265,7 @@ const AccessCheck = (function() {
 			// DDP Rate Limiter
 			if ((limitPerInterval > 0) && (limitIntervalInSec > 0) && Meteor.isServer) {
 				DDPRateLimiter.addRule(_.extend({}, additionalRateLimitingKeys, {
-					type: "method",
+					type: 'method',
 					name: name
 				}), limitPerInterval, limitIntervalInSec * 1000);
 			}
@@ -258,10 +274,14 @@ const AccessCheck = (function() {
 
 
 	if (Meteor.isServer) {
-		PackageUtilities.addImmutablePropertyFunction(_ac, "makePublication",
+		PackageUtilities.addImmutablePropertyFunction(_ac, 'makePublication',
 			function makePublication({
-				name, body, schema = {}, accessChecks = [],
-				limitPerInterval = -1, limitIntervalInSec = 10,
+				name,
+				body,
+				schema = {},
+				accessChecks = [],
+				limitPerInterval = -1,
+				limitIntervalInSec = 10,
 				additionalRateLimitingKeys = ({
 					connectionId: () => true
 				}),
@@ -271,8 +291,8 @@ const AccessCheck = (function() {
 			}) {
 				Meteor.publish(name, function(params = {}) {
 					check(params, new SimpleSchema(schema));
-					var context = _.extend({
-						contextType: "publication",
+					const context = _.extend({
+						contextType: 'publication',
 					}, this);
 
 					// Create new AC fiber stack frame (why? methods calling methods and all that)
@@ -280,9 +300,9 @@ const AccessCheck = (function() {
 						if (!FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME]) {
 							FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME] = [];
 						}
-						let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
-						var newACFiberStackFrame = {
-							type: "publication",
+						const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+						const newACFiberStackFrame = {
+							type: 'publication',
 							name: name,
 							checksAlreadyRun: [],
 							accessChecks: accessChecks,
@@ -298,20 +318,23 @@ const AccessCheck = (function() {
 						}
 					}
 
-					var allChecksPassed = true;
+					let allChecksPassed = true;
 
 					try {
 						accessChecks
-							.map(o => typeof o === "string" ? {
+							.map(o => typeof o === 'string' ? {
 								name: o
 							} : o)
 							.forEach(function runCheck({
-								name, argumentMap = x => x, where
+								// eslint-disable-next-line no-shadow
+								name,
+								argumentMap = x => x,
+								where
 							}) {
 								if (!allChecksPassed) {
 									return;
 								}
-								var outcome;
+								let outcome;
 								try {
 									outcome = _ac.executeCheck.call(context, {
 										checkName: name,
@@ -334,17 +357,17 @@ const AccessCheck = (function() {
 					}
 
 					if (allChecksPassed) {
-						var result = body.call(context, params);
+						const result = body.call(context, params);
 						if (isInFiber() && _.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
-							let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+							const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
 							if (_ac.DEBUG_MODE) {
 								console.log(`[access-check|publication] Before Exit`);
 								showACStackFrame('publication', ACFiberStack);
 							}
-							let currentACFiberStackFrame = ACFiberStack.shift();
-							_.forEach(currentACFiberStackFrame.requiredChecksBeforeMilestone, function(checkList, milestoneName) {
+							const currentACFiberStackFrame = ACFiberStack.shift();
+							_.forEach(currentACFiberStackFrame.requiredChecksBeforeMilestone, (checkList, milestoneName) => {
 								if ((currentACFiberStackFrame.milestonesChecked.indexOf(milestoneName) === -1) && Meteor.isDevelopment) {
-									console.warn(`[access-check] AccessCheck.milestoneAssertion("${milestoneName}") was not called in publication ${name}.`);
+									console.warn(`[access-check] AccessCheck.milestoneAssertion('${milestoneName}') was not called in publication ${name}.`);
 								}
 							});
 						}
@@ -357,7 +380,7 @@ const AccessCheck = (function() {
 				// DDP Rate Limiter
 				if ((limitPerInterval > 0) && (limitIntervalInSec > 0) && Meteor.isServer) {
 					DDPRateLimiter.addRule(_.extend({}, additionalRateLimitingKeys, {
-						type: "subscription",
+						type: 'subscription',
 						name: name
 					}), limitPerInterval, limitIntervalInSec * 1000);
 				}
@@ -365,14 +388,14 @@ const AccessCheck = (function() {
 		);
 	}
 
-	PackageUtilities.addImmutablePropertyFunction(_ac, "milestoneAssertion",
+	PackageUtilities.addImmutablePropertyFunction(_ac, 'milestoneAssertion',
 		Meteor.isClient ? function nop() {} :
 		function milestoneAssertion(milestoneName) {
 			if (isInFiber() && _.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
-				let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
-				let currentACFiberStackFrame = ACFiberStack[0];
+				const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+				const currentACFiberStackFrame = ACFiberStack[0];
 				if (!_.isArray(currentACFiberStackFrame.requiredChecksBeforeMilestone[milestoneName])) {
-					throw new Meteor.Error("no-such-milestone", milestoneName);
+					throw new Meteor.Error('no-such-milestone', milestoneName);
 				}
 				if (AccessCheck.DEBUG_MODE) {
 					console.log(`[access-check|milestone-assertion] ${milestoneName}`);
@@ -386,7 +409,7 @@ const AccessCheck = (function() {
 					currentACFiberStackFrame.milestonesChecked.push(milestoneName);
 				}
 
-				currentACFiberStackFrame.requiredChecksBeforeMilestone[milestoneName].forEach(function(checkName) {
+				currentACFiberStackFrame.requiredChecksBeforeMilestone[milestoneName].forEach(checkName => {
 					if (currentACFiberStackFrame.checksAlreadyRun.indexOf(checkName) === -1) {
 						if (AccessCheck.DEBUG_MODE) {
 							console.log(`[access-check|milestone-assertion] ${milestoneName} failed with check ${checkName}.`);
@@ -394,9 +417,8 @@ const AccessCheck = (function() {
 						throw new Meteor.Error('check-not-run-before-milestone', `Check not run before milestone ${milestoneName}: ${checkName}`);
 					}
 				});
-
 			} else {
-				throw new Meteor.Error("improper-usage-of-milestone-assertion", "AccessCheck.milestoneAssertion should only be used in server-side methods and publications.");
+				throw new Meteor.Error('improper-usage-of-milestone-assertion', 'AccessCheck.milestoneAssertion should only be used in server-side methods and publications.');
 			}
 		}
 	);
@@ -428,7 +450,9 @@ const AccessCheck = (function() {
 
 	PackageUtilities.addImmutablePropertyObject(_ac, 'COMMON_PATTERNS', {
 		collectionHasItem: function collectionHasItem(collection, id, idKey = '_id') {
-			return !!collection.findOne(_.object([[idKey, id]]));
+			return !!collection.findOne(_.object([
+				[idKey, id]
+			]));
 		}
 	});
 
@@ -443,18 +467,18 @@ const AccessCheck = (function() {
 ////////////////////////////////////////////////////////////////////////////////
 
 function getStackTrace() {
-	let _stackTraceArr = (new Meteor.Error("not-an-exception")).stack.split("\n");
+	const _stackTraceArr = (new Meteor.Error('not-an-exception')).stack.split('\n');
 	_stackTraceArr.splice(0, 2);
-	return _stackTraceArr.join("\n");
+	return _stackTraceArr.join('\n');
 }
 
 // Ensure checks run before Mongo Reads
-["find", "findOne"].forEach(function(fnName) {
-	var originalMongoFunction = Mongo.Collection.prototype[fnName];
+['find', 'findOne'].forEach(fnName => {
+	const originalMongoFunction = Mongo.Collection.prototype[fnName];
 	Mongo.Collection.prototype[fnName] = function() {
 		if (isInFiber()) {
 			if (_.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
-				let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+				const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
 				if (AccessCheck.DEBUG_MODE) {
 					console.log(`[access-check|pre-mongo-read-check] Before Mongo.Collection#${fnName} on ${this._name}:`, _.toArray(arguments));
 					if (AccessCheck.DEBUG_MODE__SHOW_STACKTRACES) {
@@ -462,8 +486,8 @@ function getStackTrace() {
 					}
 					showACStackFrame('pre-mongo-read-check', ACFiberStack);
 				}
-				let currentACFiberStackFrame = ACFiberStack[0];
-				currentACFiberStackFrame.requiredChecksBeforeDBRead.forEach(function(checkName) {
+				const currentACFiberStackFrame = ACFiberStack[0];
+				currentACFiberStackFrame.requiredChecksBeforeDBRead.forEach(checkName => {
 					if (currentACFiberStackFrame.checksAlreadyRun.indexOf(checkName) === -1) {
 						if (AccessCheck.DEBUG_MODE) {
 							console.log(`[access-check|pre-mongo-read-check] Failed at check ${checkName}.`);
@@ -478,12 +502,12 @@ function getStackTrace() {
 });
 
 // Ensure checks run before Mongo Writes
-["insert", "remove", "update", "upsert"].forEach(function(fnName) {
-	var originalMongoFunction = Mongo.Collection.prototype[fnName];
+['insert', 'remove', 'update', 'upsert'].forEach(fnName => {
+	const originalMongoFunction = Mongo.Collection.prototype[fnName];
 	Mongo.Collection.prototype[fnName] = function() {
 		if (isInFiber()) {
 			if (_.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
-				let ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+				const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
 				if (AccessCheck.DEBUG_MODE) {
 					console.log(`[access-check|pre-mongo-write-check] Before Mongo.Collection#${fnName} on ${this._name}:`, _.toArray(arguments));
 					if (AccessCheck.DEBUG_MODE__SHOW_STACKTRACES) {
@@ -491,8 +515,8 @@ function getStackTrace() {
 					}
 					showACStackFrame('pre-mongo-write-check', ACFiberStack);
 				}
-				let currentACFiberStackFrame = ACFiberStack[0];
-				currentACFiberStackFrame.requiredChecksBeforeDBWrite.forEach(function(checkName) {
+				const currentACFiberStackFrame = ACFiberStack[0];
+				currentACFiberStackFrame.requiredChecksBeforeDBWrite.forEach(checkName => {
 					if (currentACFiberStackFrame.checksAlreadyRun.indexOf(checkName) === -1) {
 						if (AccessCheck.DEBUG_MODE) {
 							console.log(`[access-check|pre-mongo-write-check] Failed at check ${checkName}.`);
