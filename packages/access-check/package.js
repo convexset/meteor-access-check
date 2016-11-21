@@ -1,7 +1,7 @@
 Package.describe({
 	// [validatis:stack]
 	name: 'convexset:access-check',
-	version: '0.1.2_2',
+	version: '0.1.2_3',
 	summary: 'A Meteor package for reusable authentication checks',
 	git: 'https://github.com/convexset/meteor-access-check',
 	documentation: '../../README.md'

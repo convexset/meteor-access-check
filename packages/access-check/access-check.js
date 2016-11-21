@@ -36,9 +36,11 @@ let showACStackFrame = function() {};
 if (Meteor.isServer) {
 	showACStackFrame = function _showACStackFrame(s, ACFiberStack) {
 		console.log(`[access-check|${s}] Current AC Stack Frame (${ACFiberStack.length} total):`);
-		_.forEach(ACFiberStack[0], (v, n) => {
-			console.log(`    - ${n}:`, v);
-		});
+		if (_.isObject(ACFiberStack[0])) {
+			_.forEach(ACFiberStack[0], (v, n) => {
+				console.log(`    - ${n}:`, v);
+			});
+		}
 	};
 }
 
@@ -477,8 +479,8 @@ function getStackTrace() {
 	const originalMongoFunction = Mongo.Collection.prototype[fnName];
 	Mongo.Collection.prototype[fnName] = function() {
 		if (isInFiber()) {
-			if (_.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
-				const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+			const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+			if (_.isArray(ACFiberStack) && (ACFiberStack.length > 0)) {
 				if (AccessCheck.DEBUG_MODE) {
 					console.log(`[access-check|pre-mongo-read-check] Before Mongo.Collection#${fnName} on ${this._name}:`, _.toArray(arguments));
 					if (AccessCheck.DEBUG_MODE__SHOW_STACKTRACES) {
@@ -506,8 +508,8 @@ function getStackTrace() {
 	const originalMongoFunction = Mongo.Collection.prototype[fnName];
 	Mongo.Collection.prototype[fnName] = function() {
 		if (isInFiber()) {
-			if (_.isArray(FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME])) {
-				const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+			const ACFiberStack = FiberScope.current[ACCESS_CHECK_FIBER_STACK_NAME];
+			if (_.isArray(ACFiberStack) && (ACFiberStack.length > 0)) {
 				if (AccessCheck.DEBUG_MODE) {
 					console.log(`[access-check|pre-mongo-write-check] Before Mongo.Collection#${fnName} on ${this._name}:`, _.toArray(arguments));
 					if (AccessCheck.DEBUG_MODE__SHOW_STACKTRACES) {
