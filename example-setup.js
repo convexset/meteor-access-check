@@ -1,5 +1,5 @@
-import { Meteor } from "meteor/meteor";
-import { Mongo } from "meteor/mongo";
+import { Meteor } from 'meteor/meteor';
+import { Mongo } from 'meteor/mongo';
 
 import { Log } from "meteor/convexset:log";
 import { AccessCheck } from "meteor/convexset:access-check";

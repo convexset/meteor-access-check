@@ -1,4 +1,4 @@
-import { Meteor } from "meteor/meteor";
+import { Meteor } from 'meteor/meteor';
 
 Meteor.startup(function() {
 	console.log("Edit the example-client.js file to play with what is invoked on the server.");
